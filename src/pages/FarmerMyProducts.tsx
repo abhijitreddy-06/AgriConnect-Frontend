@@ -57,7 +57,10 @@ const FarmerMyProducts = () => {
       void queryClient.invalidateQueries({ queryKey: ["farmer-market-products"] });
     },
     onError: (error: unknown) => {
-      const message = error instanceof Error && error.message ? error.message : "Failed to delete product";
+      const rawMessage = error instanceof Error && error.message ? error.message : "Failed to delete product";
+      const message = rawMessage.toLowerCase().includes("cold start") || rawMessage.toLowerCase().includes("unable to reach server")
+        ? "Server is waking up. Please retry delete in 15-30 seconds."
+        : rawMessage;
       toast.error(message);
     },
   });

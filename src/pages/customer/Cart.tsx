@@ -1,15 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, MapPin } from "lucide-react";
 import Footer from "@/components/landing/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cartService } from "@/services/cart.service";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 const Cart = () => {
   const queryClient = useQueryClient();
   const [deliveryAddress, setDeliveryAddress] = useState("");
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user?.deliveryAddress) {
+      setDeliveryAddress(user.deliveryAddress);
+    }
+  }, [user?.deliveryAddress]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["customer-cart"],
@@ -162,6 +170,17 @@ const Cart = () => {
                     onChange={(event) => setDeliveryAddress(event.target.value)}
                     placeholder="Enter delivery address"
                   />
+                  {user?.deliveryAddress && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => setDeliveryAddress(user.deliveryAddress || "")}
+                    >
+                      <MapPin className="h-4 w-4 mr-2" /> Use Saved Profile Address
+                    </Button>
+                  )}
                 </div>
 
                 <Button className="w-full bg-accent hover:bg-accent/90" onClick={() => checkoutMutation.mutate()} disabled={checkoutMutation.isPending}>

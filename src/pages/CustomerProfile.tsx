@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   User, Phone, ShoppingCart, IndianRupee,
-  LogOut, Pencil, ShoppingBag
+  LogOut, Pencil, ShoppingBag, MapPin, LocateFixed
 } from "lucide-react";
 import Footer from "@/components/landing/Footer";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ROUTES } from "@/config/routes";
 import { useAuth } from "@/context/AuthContext";
 import { orderService } from "@/services/order.service";
+import { locationService } from "@/services/location.service";
 import { toast } from "sonner";
 
 const quickLinks = [
@@ -28,6 +29,7 @@ const CustomerProfile = () => {
   const { user, logout, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [fullName, setFullName] = useState(user?.username || "");
+  const [deliveryAddress, setDeliveryAddress] = useState(user?.deliveryAddress || "");
 
   const { data: orderData } = useQuery({
     queryKey: ["customer-profile-orders"],
@@ -35,7 +37,10 @@ const CustomerProfile = () => {
   });
 
   const saveProfileMutation = useMutation({
-    mutationFn: () => updateProfile({ username: fullName.trim() }),
+    mutationFn: () => updateProfile({
+      username: fullName.trim(),
+      delivery_address: deliveryAddress.trim() ? deliveryAddress.trim() : null,
+    }),
     onSuccess: () => {
       toast.success("Profile updated successfully");
       setIsEditing(false);
@@ -54,6 +59,17 @@ const CustomerProfile = () => {
     },
     onError: () => {
       navigate(ROUTES.root, { replace: true });
+    },
+  });
+
+  const locateMutation = useMutation({
+    mutationFn: () => locationService.getCurrentLocationAddress(),
+    onSuccess: (resolved) => {
+      setDeliveryAddress(resolved.address);
+      toast.success("Address detected from current location");
+    },
+    onError: (error: unknown) => {
+      toast.error(error instanceof Error ? error.message : "Unable to detect location");
     },
   });
 
@@ -104,6 +120,7 @@ const CustomerProfile = () => {
                 <ShoppingBag className="h-3 w-3 mr-1" /> Customer
               </Badge>
               <p className="text-sm text-muted-foreground mt-3">Phone: {user?.phone || "-"}</p>
+              <p className="text-xs text-muted-foreground mt-2">Address: {user?.deliveryAddress || "Not set"}</p>
 
               <div className="w-full mt-6 space-y-2">
                 <Button variant="outline" className="w-full justify-start gap-2" onClick={() => setIsEditing(true)}>
@@ -147,6 +164,15 @@ const CustomerProfile = () => {
                       <p className="text-sm font-medium text-foreground">{user?.phone || "-"}</p>
                     </div>
                   </div>
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/40 sm:col-span-2">
+                    <div className="rounded-lg bg-accent/10 p-2.5">
+                      <MapPin className="h-4 w-4 text-accent" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Address</p>
+                      <p className="text-sm font-medium text-foreground break-words">{user?.deliveryAddress || "Not set"}</p>
+                    </div>
+                  </div>
                 </div>
 
                 {isEditing && (
@@ -160,6 +186,25 @@ const CustomerProfile = () => {
                         placeholder="Enter full name"
                       />
                     </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="deliveryAddress">Address</Label>
+                      <Input
+                        id="deliveryAddress"
+                        value={deliveryAddress}
+                        onChange={(event) => setDeliveryAddress(event.target.value)}
+                        placeholder="Enter your delivery address"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => locateMutation.mutate()}
+                      disabled={locateMutation.isPending}
+                      className="w-full sm:w-auto"
+                    >
+                      <LocateFixed className="h-4 w-4 mr-2" />
+                      {locateMutation.isPending ? "Detecting..." : "Use Current Location"}
+                    </Button>
                     <div className="flex gap-2">
                       <Button
                         onClick={() => {

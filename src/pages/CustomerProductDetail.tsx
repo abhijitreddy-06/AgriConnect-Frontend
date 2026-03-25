@@ -13,6 +13,7 @@ import { orderService } from "@/services/order.service";
 import { wishlistService } from "@/services/wishlist.service";
 import { farmerReviewService } from "@/services/farmerReview.service";
 import { ROUTES } from "@/config/routes";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 type Quality = "Premium" | "Standard" | "Economy" | "Organic";
@@ -31,6 +32,7 @@ const CustomerProductDetail = () => {
   const parsedProductId = Number(productId);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [quantity, setQuantity] = useState(1);
   const [wishlisted, setWishlisted] = useState(false);
@@ -83,6 +85,12 @@ const CustomerProductDetail = () => {
     const ids = new Set(wishlist.map((item) => Number(item.productId)));
     setWishlisted(ids.has(parsedProductId));
   }, [wishlist, parsedProductId]);
+
+  useEffect(() => {
+    if (user?.deliveryAddress) {
+      setDeliveryAddress(user.deliveryAddress);
+    }
+  }, [user?.deliveryAddress]);
 
   const productQuality = (["Premium", "Standard", "Economy", "Organic"].includes(product?.quality || "")
     ? product?.quality
@@ -287,6 +295,16 @@ const CustomerProductDetail = () => {
                   onChange={(event) => setDeliveryAddress(event.target.value)}
                   placeholder="Enter delivery address for Buy Now"
                 />
+                {user?.deliveryAddress && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDeliveryAddress(user.deliveryAddress || "")}
+                  >
+                    Use Saved Profile Address
+                  </Button>
+                )}
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3">

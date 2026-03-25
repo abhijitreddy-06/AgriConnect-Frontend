@@ -1,5 +1,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 type ApiRequestOptions = RequestInit & {
   query?: Record<string, string | number | boolean | undefined | null>;
 };
@@ -41,24 +43,50 @@ const isAuthRefreshableRequest = (path: string) => {
 export const apiRequest = async <T>(path: string, options: ApiRequestOptions = {}): Promise<T> => {
   const { query, headers, ...rest } = options;
   const isFormDataBody = rest.body instanceof FormData;
+  const method = String(rest.method || "GET").toUpperCase();
+
+  const isRetryableMethod = ["GET", "DELETE", "PUT"].includes(method);
+  const maxNetworkRetries = isRetryableMethod ? 2 : 0;
 
   const run = async () => {
-    const response = await fetch(buildUrl(path, query), {
-      credentials: "include",
-      headers: isFormDataBody
-        ? {
-            ...headers,
-          }
-        : {
-            "Content-Type": "application/json",
-            ...headers,
-          },
-      ...rest,
-    });
+    let attempt = 0;
+    let lastError: unknown = null;
 
-    const isJson = response.headers.get("content-type")?.includes("application/json");
-    const payload = isJson ? await response.json() : null;
-    return { response, payload };
+    while (attempt <= maxNetworkRetries) {
+      try {
+        const response = await fetch(buildUrl(path, query), {
+          credentials: "include",
+          headers: isFormDataBody
+            ? {
+                ...headers,
+              }
+            : {
+                "Content-Type": "application/json",
+                ...headers,
+              },
+          ...rest,
+        });
+
+        const isJson = response.headers.get("content-type")?.includes("application/json");
+        const payload = isJson ? await response.json() : null;
+        return { response, payload };
+      } catch (error) {
+        lastError = error;
+        if (attempt >= maxNetworkRetries) {
+          const message = error instanceof Error ? error.message : "Network request failed";
+          throw new Error(
+            `Unable to reach server (${message}). Backend may be waking up after cold start. Please retry in a few seconds.`
+          );
+        }
+
+        const backoffMs = (attempt + 1) * 1200;
+        await sleep(backoffMs);
+      }
+
+      attempt += 1;
+    }
+
+    throw new Error(lastError instanceof Error ? lastError.message : "Network request failed");
   };
 
   let { response, payload } = await run();

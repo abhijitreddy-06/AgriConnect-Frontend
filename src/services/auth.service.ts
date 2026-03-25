@@ -7,6 +7,8 @@ export interface AuthUser {
   username?: string;
   phone?: string;
   role?: AuthRole;
+  deliveryAddress?: string | null;
+  delivery_address?: string | null;
   profileComplete?: boolean;
 }
 
@@ -31,6 +33,7 @@ export interface SignupPayload {
 
 export interface UpdateProfilePayload {
   username: string;
+  delivery_address?: string | null;
 }
 
 type ApiAuthEnvelope = {
@@ -44,11 +47,23 @@ type ApiAuthEnvelope = {
   };
 };
 
+const normalizeUser = (user?: AuthUser | null): AuthUser | null => {
+  if (!user) return null;
+
+  const normalizedAddress = user.deliveryAddress ?? user.delivery_address ?? null;
+
+  return {
+    ...user,
+    deliveryAddress: normalizedAddress,
+    delivery_address: normalizedAddress,
+  };
+};
+
 const normalizeAuthSession = (payload?: ApiAuthEnvelope | null): AuthSession => {
   const source = payload?.data ?? payload ?? {};
-  const user = source.user ?? null;
+  const user = normalizeUser(source.user ?? null);
   const role = source.role ?? user?.role ?? null;
-  const profileComplete = Boolean(source.profileComplete ?? user?.profileComplete);
+  const profileComplete = Boolean(source.profileComplete ?? user?.profileComplete ?? user?.deliveryAddress);
 
   return {
     user,
@@ -93,6 +108,6 @@ export const authService = {
       body: JSON.stringify(data),
     });
 
-    return payload.data?.user ?? payload.user ?? {};
+    return normalizeUser(payload.data?.user ?? payload.user ?? null) ?? {};
   },
 };
