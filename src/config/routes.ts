@@ -14,6 +14,8 @@ export const ROUTES = {
     home: "/customer/home",
     market: "/customer/market",
     productDetail: "/customer/market/:productId",
+    wishlist: "/customer/wishlist",
+    articles: "/customer/articles",
     profile: "/customer/profile",
     cart: "/customer/cart",
     orders: "/customer/orders",

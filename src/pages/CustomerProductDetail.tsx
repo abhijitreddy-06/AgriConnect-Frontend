@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { productService } from "@/services/product.service";
 import { cartService } from "@/services/cart.service";
 import { orderService } from "@/services/order.service";
+import { wishlistService } from "@/services/wishlist.service";
+import { farmerReviewService } from "@/services/farmerReview.service";
 import { ROUTES } from "@/config/routes";
 import { toast } from "sonner";
 
@@ -33,6 +35,21 @@ const CustomerProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [wishlisted, setWishlisted] = useState(false);
   const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [reviewOrderId, setReviewOrderId] = useState("");
+  const [reliabilityRating, setReliabilityRating] = useState(5);
+  const [qualityRating, setQualityRating] = useState(5);
+  const [reviewFeedback, setReviewFeedback] = useState("");
+
+  const { data: wishlist = [] } = useQuery({
+    queryKey: ["wishlist-items"],
+    queryFn: () => wishlistService.list(),
+  });
+
+  const { data: recommendationData } = useQuery({
+    queryKey: ["customer-product-recommendations", parsedProductId],
+    queryFn: () => productService.getRecommendations(parsedProductId, 6),
+    enabled: Number.isFinite(parsedProductId),
+  });
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["customer-product-detail", parsedProductId],
@@ -46,12 +63,26 @@ const CustomerProductDetail = () => {
     enabled: Boolean(product?.category),
   });
 
+  const { data: farmerReviewData } = useQuery({
+    queryKey: ["farmer-reviews", product?.farmerId],
+    queryFn: () => farmerReviewService.getFarmerReviews(Number(product?.farmerId)),
+    enabled: Boolean(product?.farmerId),
+  });
+
   const related = useMemo(() => {
     if (!product) return [];
     return (relatedData?.products ?? [])
       .filter((item) => Number(item.id) !== Number(product.id))
       .slice(0, 4);
   }, [relatedData?.products, product]);
+
+  const customersAlsoBought = recommendationData?.customersAlsoBought ?? [];
+  const seasonalSuggestions = recommendationData?.seasonalSuggestions ?? [];
+
+  useEffect(() => {
+    const ids = new Set(wishlist.map((item) => Number(item.productId)));
+    setWishlisted(ids.has(parsedProductId));
+  }, [wishlist, parsedProductId]);
 
   const productQuality = (["Premium", "Standard", "Economy", "Organic"].includes(product?.quality || "")
     ? product?.quality
@@ -92,6 +123,37 @@ const CustomerProductDetail = () => {
     },
     onError: (error: unknown) => {
       toast.error(error instanceof Error ? error.message : "Unable to place order");
+    },
+  });
+
+  const wishlistToggleMutation = useMutation({
+    mutationFn: () => wishlistService.toggle(parsedProductId),
+    onSuccess: (nextState) => {
+      setWishlisted(nextState);
+      toast.success(nextState ? "Added to wishlist" : "Removed from wishlist");
+      void queryClient.invalidateQueries({ queryKey: ["wishlist-items"] });
+      void queryClient.invalidateQueries({ queryKey: ["wishlist-notifications"] });
+    },
+    onError: (error: unknown) => {
+      toast.error(error instanceof Error ? error.message : "Unable to update wishlist");
+    },
+  });
+
+  const farmerReviewMutation = useMutation({
+    mutationFn: () => farmerReviewService.create({
+      order_id: Number(reviewOrderId),
+      reliability_rating: reliabilityRating,
+      quality_rating: qualityRating,
+      feedback: reviewFeedback || undefined,
+    }),
+    onSuccess: () => {
+      toast.success("Farmer review submitted");
+      setReviewOrderId("");
+      setReviewFeedback("");
+      void queryClient.invalidateQueries({ queryKey: ["farmer-reviews", product?.farmerId] });
+    },
+    onError: (error: unknown) => {
+      toast.error(error instanceof Error ? error.message : "Unable to submit farmer review");
     },
   });
 
@@ -163,7 +225,7 @@ const CustomerProductDetail = () => {
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
                 <button
-                  onClick={() => setWishlisted(!wishlisted)}
+                  onClick={() => wishlistToggleMutation.mutate()}
                   className="absolute top-4 right-4 p-2 rounded-full bg-card/80 backdrop-blur-sm border border-border hover:bg-card transition-colors"
                 >
                   <Heart className={`h-5 w-5 transition-colors ${wishlisted ? "fill-red-500 text-red-500" : "text-muted-foreground"}`} />
@@ -247,10 +309,53 @@ const CustomerProductDetail = () => {
                     <Package className="h-4 w-4 text-accent" />
                     <span>Available stock: {product.quantity ?? 0}</span>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <span>Farmer rating: {Number(product.farmerRating ?? 0).toFixed(1)}★ ({product.farmerTotalReviews ?? 0})</span>
+                  </div>
                 </div>
+              </div>
+
+              <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+                <h3 className="text-sm font-semibold text-foreground">Rate This Farmer</h3>
+                <p className="text-xs text-muted-foreground">Submit after order delivery to rate reliability and quality.</p>
+                <Input value={reviewOrderId} onChange={(event) => setReviewOrderId(event.target.value)} placeholder="Delivered order ID" />
+                <div className="grid grid-cols-2 gap-2">
+                  <Input value={String(reliabilityRating)} onChange={(event) => setReliabilityRating(Number(event.target.value) || 1)} placeholder="Reliability (1-5)" />
+                  <Input value={String(qualityRating)} onChange={(event) => setQualityRating(Number(event.target.value) || 1)} placeholder="Quality (1-5)" />
+                </div>
+                <Input value={reviewFeedback} onChange={(event) => setReviewFeedback(event.target.value)} placeholder="Feedback (optional)" />
+                <Button
+                  type="button"
+                  size="sm"
+                  className="bg-accent hover:bg-accent/90"
+                  onClick={() => farmerReviewMutation.mutate()}
+                  disabled={farmerReviewMutation.isPending || !reviewOrderId}
+                >
+                  Submit Farmer Review
+                </Button>
               </div>
             </motion.div>
           </div>
+
+          {farmerReviewData && (
+            <section className="mb-14">
+              <h2 className="text-xl font-display font-bold text-foreground mb-4">Farmer Reviews</h2>
+              <div className="rounded-2xl border border-accent/20 bg-card p-4 mb-4 grid sm:grid-cols-3 gap-3 text-sm">
+                <div><span className="text-muted-foreground">Overall:</span> <span className="font-semibold">{Number(farmerReviewData.averageRating || 0).toFixed(1)}★</span></div>
+                <div><span className="text-muted-foreground">Reliability:</span> <span className="font-semibold">{Number(farmerReviewData.averageReliability || 0).toFixed(1)}★</span></div>
+                <div><span className="text-muted-foreground">Quality:</span> <span className="font-semibold">{Number(farmerReviewData.averageQuality || 0).toFixed(1)}★</span></div>
+              </div>
+              <div className="space-y-3">
+                {(farmerReviewData.reviews ?? []).slice(0, 4).map((entry) => (
+                  <div key={entry.id} className="rounded-xl border border-border p-3 bg-card/80">
+                    <p className="text-sm font-semibold text-foreground">{entry.customer_name || "Customer"} • {Number(entry.rating || 0).toFixed(1)}★</p>
+                    <p className="text-xs text-muted-foreground mt-1">Reliability {entry.reliability_rating}/5 • Quality {entry.quality_rating}/5</p>
+                    {entry.feedback && <p className="text-sm text-foreground/90 mt-2">{entry.feedback}</p>}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
             <h2 className="text-xl font-display font-bold text-foreground mb-5">Related Products</h2>
@@ -278,6 +383,36 @@ const CustomerProductDetail = () => {
               ))}
             </div>
           </motion.div>
+
+          {customersAlsoBought.length > 0 && (
+            <section className="mt-10">
+              <h2 className="text-xl font-display font-bold text-foreground mb-5">Customers Also Bought</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                {customersAlsoBought.map((item) => (
+                  <Link key={`rec-${item.id}`} to={`${ROUTES.customer.market}/${item.id}`} className="rounded-2xl border border-border bg-card p-3 hover:border-accent/30 transition-colors">
+                    <img src={item.image || fallbackImage} alt={item.name} className="w-full h-32 rounded-lg object-cover mb-2" />
+                    <p className="text-sm font-semibold text-foreground">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">₹{item.price}/kg • {item.rating?.toFixed(1)}★</p>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {seasonalSuggestions.length > 0 && (
+            <section className="mt-10">
+              <h2 className="text-xl font-display font-bold text-foreground mb-5">Seasonal Suggestions</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                {seasonalSuggestions.map((item) => (
+                  <Link key={`season-${item.id}`} to={`${ROUTES.customer.market}/${item.id}`} className="rounded-2xl border border-border bg-card p-3 hover:border-accent/30 transition-colors">
+                    <img src={item.image || fallbackImage} alt={item.name} className="w-full h-32 rounded-lg object-cover mb-2" />
+                    <p className="text-sm font-semibold text-foreground">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">₹{item.price}/kg • {item.category}</p>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </main>
       <Footer />

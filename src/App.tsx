@@ -28,6 +28,8 @@ import ProductDetail from "./pages/ProductDetail.tsx";
 import CustomerHome from "@/pages/customer/Home";
 import CustomerMarket from "@/pages/customer/Market";
 import CustomerProductDetail from "@/pages/customer/ProductDetail";
+import CustomerWishlist from "@/pages/customer/Wishlist";
+import CustomerArticles from "@/pages/customer/Articles";
 import CustomerProfile from "@/pages/customer/Profile";
 import CustomerCart from "@/pages/customer/Cart";
 import CustomerOrders from "@/pages/customer/Orders";
@@ -88,6 +90,8 @@ const App = () => (
                   <Route path="/doctor/home" element={<Navigate to={ROUTES.customer.home} replace />} />
                   <Route path={ROUTES.customer.market} element={<CustomerMarket />} />
                   <Route path={ROUTES.customer.productDetail} element={<CustomerProductDetail />} />
+                  <Route path={ROUTES.customer.wishlist} element={<CustomerWishlist />} />
+                  <Route path={ROUTES.customer.articles} element={<CustomerArticles />} />
                   <Route path={ROUTES.customer.profile} element={<CustomerProfile />} />
                   <Route path={ROUTES.customer.cart} element={<CustomerCart />} />
                   <Route path={ROUTES.customer.orders} element={<CustomerOrders />} />

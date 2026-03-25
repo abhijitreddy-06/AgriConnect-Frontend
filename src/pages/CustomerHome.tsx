@@ -1,11 +1,14 @@
 import Footer from "@/components/landing/Footer";
 import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ShoppingCart, Truck, ShieldCheck, Clock3 } from "lucide-react";
+import { ArrowRight, ShoppingCart, Truck, ShieldCheck, Clock3, CloudSun, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "@/config/routes";
 import heroDashboard from "@/assets/hero-dashboard.png";
 import { useAuth } from "@/context/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { weatherService } from "@/services/weather.service";
+import { articleService } from "@/services/article.service";
 
 const getGreeting = () => {
   const h = new Date().getHours();
@@ -40,6 +43,18 @@ const customerHighlights = [
 const CustomerHome = () => {
   const reduceMotion = useReducedMotion();
   const { user } = useAuth();
+
+  const { data: weatherData } = useQuery({
+    queryKey: ["regional-weather-home"],
+    queryFn: () => weatherService.getRegionalWeather({ region: "hyderabad" }),
+  });
+
+  const { data: featuredArticles = [] } = useQuery({
+    queryKey: ["home-extension-articles"],
+    queryFn: () => articleService.list(),
+  });
+
+  const topArticles = featuredArticles.slice(0, 3);
 
   return (
   <div className="min-h-screen bg-background flex flex-col">
@@ -117,6 +132,59 @@ const CustomerHome = () => {
               <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
             </motion.div>
           ))}
+        </div>
+      </div>
+    </section>
+
+    <section className="pb-14">
+      <div className="container">
+        <div className="grid lg:grid-cols-2 gap-4">
+          <div className="customer-premium-card p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <CloudSun className="h-5 w-5 text-accent" />
+              <h3 className="font-display font-semibold text-foreground">Regional Weather Snapshot</h3>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="rounded-lg border border-accent/20 p-3">
+                <p className="text-muted-foreground">Temperature</p>
+                <p className="text-lg font-bold text-foreground">{weatherData?.weather?.temperature ?? "-"}°C</p>
+              </div>
+              <div className="rounded-lg border border-accent/20 p-3">
+                <p className="text-muted-foreground">Humidity</p>
+                <p className="text-lg font-bold text-foreground">{weatherData?.weather?.humidity ?? "-"}%</p>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-2">
+              <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-500" /> Pest & Disease Alerts
+              </p>
+              {(weatherData?.pestDiseaseAlerts ?? []).map((alert) => (
+                <p key={alert} className="text-xs text-muted-foreground rounded-md border border-amber-500/20 bg-amber-500/10 p-2">
+                  {alert}
+                </p>
+              ))}
+            </div>
+          </div>
+
+          <div className="customer-premium-card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-display font-semibold text-foreground">Extension Articles</h3>
+              <Button asChild size="sm" variant="outline" className="border-accent/40 text-accent hover:bg-accent/10">
+                <Link to={ROUTES.customer.articles}>View All</Link>
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              {topArticles.map((article) => (
+                <div key={article.id} className="rounded-lg border border-accent/20 p-3">
+                  <p className="text-sm font-semibold text-foreground">{article.title}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{article.summary}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </section>

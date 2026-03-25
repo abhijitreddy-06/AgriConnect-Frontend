@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Search, Heart, ChevronLeft, ChevronRight, ShoppingCart, Minus, Plus, Eye } from "lucide-react";
+import { Search, Heart, ChevronLeft, ChevronRight, ShoppingCart, Minus, Plus, Eye, Filter } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import Footer from "@/components/landing/Footer";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { productService } from "@/services/product.service";
 import { cartService } from "@/services/cart.service";
+import { wishlistService } from "@/services/wishlist.service";
 import { toast } from "sonner";
 import { ROUTES } from "@/config/routes";
 
@@ -36,17 +37,74 @@ const CustomerMarket = () => {
   const [page, setPage] = useState(1);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const [selectedQuantities, setSelectedQuantities] = useState<Record<number, number>>({});
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [minRating, setMinRating] = useState("");
+  const [maxDistance, setMaxDistance] = useState("");
+  const [organicOnly, setOrganicOnly] = useState(false);
+  const [ecoOnly, setEcoOnly] = useState(false);
+  const [seasonalOnly, setSeasonalOnly] = useState(false);
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const queryClient = useQueryClient();
 
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
+      },
+      () => {
+        setUserCoords(null);
+      },
+      { enableHighAccuracy: false, timeout: 6000 }
+    );
+  }, []);
+
+  const { data: wishlist = [] } = useQuery({
+    queryKey: ["wishlist-items"],
+    queryFn: () => wishlistService.list(),
+  });
+
+  useEffect(() => {
+    setFavorites(new Set(wishlist.map((item) => Number(item.productId))));
+  }, [wishlist]);
+
   const { data, isLoading } = useQuery({
-    queryKey: ["customer-market-products", activeCategory, search],
+    queryKey: [
+      "customer-market-products",
+      activeCategory,
+      search,
+      minPrice,
+      maxPrice,
+      minRating,
+      maxDistance,
+      organicOnly,
+      ecoOnly,
+      seasonalOnly,
+      userCoords?.lat,
+      userCoords?.lng,
+    ],
     queryFn: () =>
       productService.list({
         category: activeCategory === "All" ? undefined : activeCategory,
         search: search || undefined,
+        min_price: minPrice ? Number(minPrice) : undefined,
+        max_price: maxPrice ? Number(maxPrice) : undefined,
+        min_rating: minRating ? Number(minRating) : undefined,
+        max_distance: maxDistance ? Number(maxDistance) : undefined,
+        organic: organicOnly || undefined,
+        eco: ecoOnly || undefined,
+        seasonal: seasonalOnly || undefined,
+        user_lat: userCoords?.lat,
+        user_lng: userCoords?.lng,
         page: 1,
         limit: 100,
       }),
+  });
+
+  const { data: seasonalSuggestions } = useQuery({
+    queryKey: ["seasonal-suggestions-market"],
+    queryFn: () => productService.getSeasonalSuggestions(6),
   });
 
   const addToCartMutation = useMutation({
@@ -74,28 +132,45 @@ const CustomerMarket = () => {
         category: product.category || "Uncategorized",
         image: product.image || fallbackImage,
         quality,
+        rating: Number(product.rating ?? 0),
+        farmerRating: Number(product.farmerRating ?? 0),
+        distanceKm: product.distanceKm ?? null,
+        isOrganic: Boolean(product.isOrganic),
+        isEcoCertified: Boolean(product.isEcoCertified),
       };
     });
   }, [data?.products]);
 
-  const filtered = useMemo(() => {
-    return products.filter((p) => {
-      const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
-      const matchCat = activeCategory === "All" || p.category === activeCategory;
-      return matchSearch && matchCat;
-    });
-  }, [products, search, activeCategory]);
+  const filtered = products;
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   const toggleFav = (id: number) => {
-    setFavorites((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+    if (favorites.has(id)) {
+      setFavorites((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    } else {
+      setFavorites((prev) => new Set(prev).add(id));
+    }
+
+    wishlistToggleMutation.mutate(id);
   };
+
+  const wishlistToggleMutation = useMutation({
+    mutationFn: (productId: number) => wishlistService.toggle(productId),
+    onSuccess: (wishlisted) => {
+      toast.success(wishlisted ? "Added to wishlist" : "Removed from wishlist");
+      void queryClient.invalidateQueries({ queryKey: ["wishlist-items"] });
+      void queryClient.invalidateQueries({ queryKey: ["wishlist-notifications"] });
+    },
+    onError: (error: unknown) => {
+      toast.error(error instanceof Error ? error.message : "Unable to update wishlist");
+    },
+  });
 
   const getSelectedQuantity = (productId: number) => selectedQuantities[productId] ?? 1;
 
@@ -126,6 +201,44 @@ const CustomerMarket = () => {
               />
             </div>
           </motion.div>
+
+          <div className="rounded-2xl border border-accent/20 bg-card p-4 mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Filter className="h-4 w-4 text-accent" />
+              <h3 className="font-semibold text-foreground">Advanced Filters</h3>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Input value={minPrice} onChange={(e) => { setMinPrice(e.target.value); setPage(1); }} placeholder="Min price" />
+              <Input value={maxPrice} onChange={(e) => { setMaxPrice(e.target.value); setPage(1); }} placeholder="Max price" />
+              <Input value={minRating} onChange={(e) => { setMinRating(e.target.value); setPage(1); }} placeholder="Min rating (0-5)" />
+              <Input value={maxDistance} onChange={(e) => { setMaxDistance(e.target.value); setPage(1); }} placeholder="Distance km" />
+            </div>
+
+            <div className="flex flex-wrap gap-2 mt-3">
+              <button
+                type="button"
+                onClick={() => { setOrganicOnly((prev) => !prev); setPage(1); }}
+                className={`px-3 py-1.5 rounded-full text-sm border ${organicOnly ? "bg-accent text-accent-foreground border-accent" : "bg-background text-muted-foreground border-border"}`}
+              >
+                Organic Only
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEcoOnly((prev) => !prev); setPage(1); }}
+                className={`px-3 py-1.5 rounded-full text-sm border ${ecoOnly ? "bg-accent text-accent-foreground border-accent" : "bg-background text-muted-foreground border-border"}`}
+              >
+                Eco-certified
+              </button>
+              <button
+                type="button"
+                onClick={() => { setSeasonalOnly((prev) => !prev); setPage(1); }}
+                className={`px-3 py-1.5 rounded-full text-sm border ${seasonalOnly ? "bg-accent text-accent-foreground border-accent" : "bg-background text-muted-foreground border-border"}`}
+              >
+                Seasonal picks
+              </button>
+            </div>
+          </div>
 
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }} className="mb-8 overflow-x-auto pb-2 -mx-1">
             <div className="flex gap-2 px-1 min-w-max">
@@ -186,6 +299,15 @@ const CustomerMarket = () => {
                       <div className="flex items-center justify-between">
                         <span className="text-lg font-bold text-accent">₹{product.price}<span className="text-xs font-normal text-muted-foreground">/kg</span></span>
                         <Badge variant="outline" className={`text-xs ${qualityStyle[product.quality]}`}>{product.quality}</Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>Product {product.rating.toFixed(1)}★</span>
+                        <span>Farmer {product.farmerRating.toFixed(1)}★</span>
+                        {product.distanceKm != null && <span>{product.distanceKm} km</span>}
+                      </div>
+                      <div className="flex gap-2">
+                        {product.isOrganic && <Badge variant="secondary">Organic</Badge>}
+                        {product.isEcoCertified && <Badge variant="secondary">Eco</Badge>}
                       </div>
                     </div>
                   </Link>
@@ -259,6 +381,21 @@ const CustomerMarket = () => {
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
+          )}
+
+          {(seasonalSuggestions?.suggestions?.length ?? 0) > 0 && (
+            <section className="mt-12">
+              <h2 className="text-xl font-display font-bold text-foreground mb-4">Seasonal Suggestions</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {(seasonalSuggestions?.suggestions ?? []).map((item) => (
+                  <Link key={item.id} to={`${ROUTES.customer.market}/${item.id}`} className="rounded-xl border border-accent/20 bg-card p-3 hover:border-accent/40 transition-colors">
+                    <img src={item.image || fallbackImage} alt={item.name} className="w-full h-32 rounded-lg object-cover mb-2" />
+                    <p className="font-semibold text-foreground text-sm">{item.name}</p>
+                    <p className="text-xs text-muted-foreground mt-1">₹{item.price}/kg • {item.category}</p>
+                  </Link>
+                ))}
+              </div>
+            </section>
           )}
         </div>
       </main>

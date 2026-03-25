@@ -10,6 +10,16 @@ export interface Product {
   quantity?: number;
   farmerId?: number;
   farmerName?: string;
+  rating?: number;
+  totalReviews?: number;
+  farmerRating?: number;
+  farmerTotalReviews?: number;
+  isOrganic?: boolean;
+  isEcoCertified?: boolean;
+  latitude?: number | null;
+  longitude?: number | null;
+  farmRegion?: string | null;
+  distanceKm?: number | null;
 }
 
 type RawProduct = {
@@ -22,6 +32,16 @@ type RawProduct = {
   category?: string;
   farmer_id?: number;
   farmer_name?: string;
+  product_avg_rating?: number;
+  product_total_reviews?: number;
+  farmer_avg_rating?: number;
+  farmer_total_reviews?: number;
+  is_organic?: boolean;
+  is_eco_certified?: boolean;
+  latitude?: number | null;
+  longitude?: number | null;
+  farm_region?: string | null;
+  distance_km?: number | null;
 };
 
 interface ProductListResponse {
@@ -40,6 +60,19 @@ interface ProductDetailResponse {
   product?: RawProduct;
 }
 
+interface RecommendationsResponse {
+  data?: {
+    customersAlsoBought?: RawProduct[];
+    seasonalSuggestions?: RawProduct[];
+  };
+}
+
+interface SeasonalSuggestionsResponse {
+  data?: {
+    suggestions?: RawProduct[];
+  };
+}
+
 const normalizeProduct = (product: RawProduct): Product => ({
   id: product.id,
   name: product.product_name,
@@ -50,6 +83,16 @@ const normalizeProduct = (product: RawProduct): Product => ({
   quantity: Number(product.quantity ?? 0),
   farmerId: product.farmer_id,
   farmerName: product.farmer_name,
+  rating: Number(product.product_avg_rating ?? 0),
+  totalReviews: Number(product.product_total_reviews ?? 0),
+  farmerRating: Number(product.farmer_avg_rating ?? 0),
+  farmerTotalReviews: Number(product.farmer_total_reviews ?? 0),
+  isOrganic: Boolean(product.is_organic),
+  isEcoCertified: Boolean(product.is_eco_certified),
+  latitude: product.latitude == null ? null : Number(product.latitude),
+  longitude: product.longitude == null ? null : Number(product.longitude),
+  farmRegion: product.farm_region ?? null,
+  distanceKm: product.distance_km == null ? null : Number(product.distance_km),
 });
 
 export const productService = {
@@ -79,7 +122,22 @@ export const productService = {
     });
   },
 
-  async list(params?: { category?: string; search?: string; farmer_id?: string | number; page?: number; limit?: number }) {
+  async list(params?: {
+    category?: string;
+    search?: string;
+    farmer_id?: string | number;
+    page?: number;
+    limit?: number;
+    min_price?: number;
+    max_price?: number;
+    min_rating?: number;
+    organic?: boolean;
+    eco?: boolean;
+    max_distance?: number;
+    user_lat?: number;
+    user_lng?: number;
+    seasonal?: boolean;
+  }) {
     const payload = await apiRequest<ProductListResponse>("/products", {
       method: "GET",
       query: params,
@@ -105,6 +163,29 @@ export const productService = {
 
     const raw = payload.data ?? payload.product;
     return raw ? normalizeProduct(raw) : null;
+  },
+
+  async getRecommendations(productId: number | string, limit = 6) {
+    const payload = await apiRequest<RecommendationsResponse>(`/products/${productId}/recommendations`, {
+      method: "GET",
+      query: { limit },
+    });
+
+    return {
+      customersAlsoBought: (payload.data?.customersAlsoBought ?? []).map(normalizeProduct),
+      seasonalSuggestions: (payload.data?.seasonalSuggestions ?? []).map(normalizeProduct),
+    };
+  },
+
+  async getSeasonalSuggestions(limit = 8) {
+    const payload = await apiRequest<SeasonalSuggestionsResponse>("/products/seasonal/suggestions", {
+      method: "GET",
+      query: { limit },
+    });
+
+    return {
+      suggestions: (payload.data?.suggestions ?? []).map(normalizeProduct),
+    };
   },
 
   async remove(productId: number | string) {
