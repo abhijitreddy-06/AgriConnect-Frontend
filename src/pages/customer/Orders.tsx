@@ -127,13 +127,14 @@ const Orders = () => {
                       <span className="text-muted-foreground">Total</span>
                       <span className="text-foreground">₹{Number(order.total_price ?? 0).toFixed(2)}</span>
                     </div>
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-col gap-2.5">
                       <Badge variant="outline" className={status.className}>{status.label}</Badge>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2 justify-end">
                         {order.status !== "cancelled" && (
                           <Button
                             variant="outline"
                             size="sm"
+                            className="whitespace-nowrap"
                             onClick={() => setActiveChatOrder({ id: Number(order.id), productName: order.product_name, partnerName: order.username })}
                           >
                             <MessageCircle className="h-3.5 w-3.5 mr-1" /> Chat
@@ -143,7 +144,7 @@ const Orders = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                            className="text-destructive border-destructive/30 hover:bg-destructive/10 whitespace-nowrap"
                             onClick={() => cancelMutation.mutate(order.id)}
                             disabled={cancelMutation.isPending}
                           >

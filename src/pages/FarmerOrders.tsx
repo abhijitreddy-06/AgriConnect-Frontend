@@ -75,7 +75,7 @@ const FarmerOrders = () => {
           </div>
 
           <div className="rounded-2xl border border-border bg-card overflow-hidden">
-            <div className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-border bg-muted/40 text-xs font-semibold text-muted-foreground">
+            <div className="hidden md:grid grid-cols-12 gap-2 px-4 py-3 border-b border-border bg-muted/40 text-xs font-semibold text-muted-foreground">
               <span className="col-span-3">Product</span>
               <span className="col-span-2">Qty</span>
               <span className="col-span-3">Customer</span>
@@ -99,26 +99,60 @@ const FarmerOrders = () => {
               };
 
               return (
-                <div key={order.id} className="grid grid-cols-12 gap-2 px-4 py-3 border-b last:border-b-0 border-border text-sm items-center">
-                  <span className="col-span-3 font-medium text-foreground truncate">{order.product_name || "Product"}</span>
-                  <span className="col-span-2 text-muted-foreground">{order.quantity}</span>
-                  <span className="col-span-3 text-muted-foreground truncate">{order.username || "Customer"}</span>
-                  <span className="col-span-2">
-                    <Badge variant="outline" className={status.className}>{status.label}</Badge>
-                  </span>
-                  <span className="col-span-2 text-right">
-                    {order.status !== "cancelled" ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setActiveChatOrder({ id: Number(order.id), productName: order.product_name, partnerName: order.username })}
-                      >
-                        <MessageCircle className="h-3.5 w-3.5 mr-1" /> Chat
-                      </Button>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">-</span>
-                    )}
-                  </span>
+                <div key={order.id} className="border-b last:border-b-0 border-border px-4 py-3">
+                  <div className="md:hidden space-y-2.5 text-sm">
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">Product</span>
+                      <span className="font-medium text-foreground text-right max-w-[65%] truncate">{order.product_name || "Product"}</span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">Qty</span>
+                      <span className="text-foreground">{order.quantity}</span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">Customer</span>
+                      <span className="text-foreground text-right max-w-[60%] truncate">{order.username || "Customer"}</span>
+                    </div>
+                    <div className="flex flex-col gap-2.5">
+                      <Badge variant="outline" className={status.className}>{status.label}</Badge>
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        {order.status !== "cancelled" ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="whitespace-nowrap"
+                            onClick={() => setActiveChatOrder({ id: Number(order.id), productName: order.product_name, partnerName: order.username })}
+                          >
+                            <MessageCircle className="h-3.5 w-3.5 mr-1" /> Chat
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="hidden md:grid md:grid-cols-12 gap-2 text-sm items-center">
+                    <span className="col-span-3 font-medium text-foreground truncate">{order.product_name || "Product"}</span>
+                    <span className="col-span-2 text-muted-foreground">{order.quantity}</span>
+                    <span className="col-span-3 text-muted-foreground truncate">{order.username || "Customer"}</span>
+                    <span className="col-span-2">
+                      <Badge variant="outline" className={status.className}>{status.label}</Badge>
+                    </span>
+                    <span className="col-span-2 text-right">
+                      {order.status !== "cancelled" ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setActiveChatOrder({ id: Number(order.id), productName: order.product_name, partnerName: order.username })}
+                        >
+                          <MessageCircle className="h-3.5 w-3.5 mr-1" /> Chat
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
+                    </span>
+                  </div>
                 </div>
               );
             })}

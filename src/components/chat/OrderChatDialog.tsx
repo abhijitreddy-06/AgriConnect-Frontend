@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { MessageCircle, Send, Wifi, WifiOff } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { MessageCircle, Send } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { chatService, type ChatMessage } from "@/services/chat.service";
+import { chatService } from "@/services/chat.service";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
@@ -38,18 +38,16 @@ const formatTime = (value?: string) => {
 
 const OrderChatDialog = ({ open, onOpenChange, orderId, productName, fallbackPartnerName }: OrderChatDialogProps) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [messageInput, setMessageInput] = useState("");
-  const [liveMessages, setLiveMessages] = useState<ChatMessage[]>([]);
-  const [socketConnected, setSocketConnected] = useState(false);
-  const [partnerTyping, setPartnerTyping] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
-  const typingTimeoutRef = useRef<number | null>(null);
 
-  const { data: history = [], isLoading: isLoadingMessages } = useQuery({
+  const { data: messages = [], isLoading: isLoadingMessages } = useQuery({
     queryKey: ["chat-messages", orderId],
     queryFn: () => chatService.getMessages(Number(orderId)),
     enabled: open && Boolean(orderId),
-    staleTime: 10 * 1000,
+    staleTime: 2 * 1000,
+    refetchInterval: open && Boolean(orderId) ? 3 * 1000 : false,
   });
 
   const { data: chatInfo, isLoading: isLoadingInfo } = useQuery({
@@ -59,108 +57,38 @@ const OrderChatDialog = ({ open, onOpenChange, orderId, productName, fallbackPar
     staleTime: 10 * 1000,
   });
 
-  useEffect(() => {
-    setLiveMessages(history);
-  }, [history]);
+  const sendMutation = useMutation({
+    mutationFn: (message: string) => chatService.sendMessage(Number(orderId), message),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["chat-messages", orderId] });
+    },
+    onError: (error: unknown) => {
+      toast.error(error instanceof Error ? error.message : "Failed to send message");
+    },
+  });
 
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
     container.scrollTop = container.scrollHeight;
-  }, [liveMessages, open]);
-
-  useEffect(() => {
-    if (!open || !orderId) return;
-
-    const socket = chatService.getSocket();
-
-    const onConnect = () => {
-      setSocketConnected(true);
-      socket.emit("join_order", orderId);
-    };
-
-    const onDisconnect = () => {
-      setSocketConnected(false);
-      setPartnerTyping(false);
-    };
-
-    const onNewMessage = (incoming: ChatMessage) => {
-      if (Number(incoming.order_id) !== Number(orderId)) return;
-      setLiveMessages((prev) => {
-        if (prev.some((item) => Number(item.id) === Number(incoming.id))) return prev;
-        return [...prev, incoming];
-      });
-    };
-
-    const onChatError = (message: string) => {
-      if (message) toast.error(message);
-    };
-
-    const onTyping = (payload: { orderId: number; userId: number; active: boolean }) => {
-      if (Number(payload.orderId) !== Number(orderId)) return;
-      if (Number(payload.userId) === Number(user?.id)) return;
-      setPartnerTyping(Boolean(payload.active));
-    };
-
-    socket.on("connect", onConnect);
-    socket.on("disconnect", onDisconnect);
-    socket.on("new_message", onNewMessage);
-    socket.on("chat_error", onChatError);
-    socket.on("typing", onTyping);
-
-    if (!socket.connected) {
-      socket.connect();
-    } else {
-      onConnect();
-    }
-
-    return () => {
-      socket.off("connect", onConnect);
-      socket.off("disconnect", onDisconnect);
-      socket.off("new_message", onNewMessage);
-      socket.off("chat_error", onChatError);
-      socket.off("typing", onTyping);
-      socket.emit("typing_stop", { orderId });
-    };
-  }, [open, orderId, user?.id]);
+  }, [messages, open]);
 
   const canSend = useMemo(() => {
     if (!chatInfo) return false;
     return chatInfo.status !== "cancelled";
   }, [chatInfo]);
 
-  const handleTyping = (nextValue: string) => {
-    setMessageInput(nextValue);
-    if (!orderId) return;
-
-    const socket = chatService.getSocket();
-    if (!socket.connected) return;
-
-    socket.emit("typing_start", { orderId });
-
-    if (typingTimeoutRef.current) {
-      window.clearTimeout(typingTimeoutRef.current);
-    }
-
-    typingTimeoutRef.current = window.setTimeout(() => {
-      socket.emit("typing_stop", { orderId });
-    }, 900);
-  };
-
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!orderId || !canSend) return;
     const trimmed = messageInput.trim();
     if (!trimmed) return;
 
-    const socket = chatService.getSocket();
-    if (!socket.connected) {
-      toast.error("Realtime connection is not ready. Please try again.");
-      return;
+    try {
+      await sendMutation.mutateAsync(trimmed);
+      setMessageInput("");
+    } catch {
+      // Error toast is handled in mutation callbacks.
     }
-
-    socket.emit("send_message", { orderId, message: trimmed });
-    socket.emit("typing_stop", { orderId });
-    setMessageInput("");
   };
 
   const title = productName || chatInfo?.productName || "Order Chat";
@@ -181,10 +109,7 @@ const OrderChatDialog = ({ open, onOpenChange, orderId, productName, fallbackPar
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <Badge variant="outline" className={statusBadgeClass[status] || ""}>{status}</Badge>
-              <span className="inline-flex items-center text-xs text-muted-foreground gap-1">
-                {socketConnected ? <Wifi className="h-3.5 w-3.5 text-emerald-600" /> : <WifiOff className="h-3.5 w-3.5 text-amber-600" />}
-                {socketConnected ? "Live" : "Reconnecting"}
-              </span>
+              <span className="inline-flex items-center text-xs text-muted-foreground">Updates every 3s</span>
             </div>
           </div>
         </DialogHeader>
@@ -195,13 +120,13 @@ const OrderChatDialog = ({ open, onOpenChange, orderId, productName, fallbackPar
               <p className="text-sm text-muted-foreground">Loading chat...</p>
             )}
 
-            {!isLoadingMessages && liveMessages.length === 0 && (
+            {!isLoadingMessages && messages.length === 0 && (
               <div className="text-center py-10 text-sm text-muted-foreground">
                 No messages yet. Start the conversation.
               </div>
             )}
 
-            {liveMessages.map((item) => {
+            {messages.map((item) => {
               const isMine = Number(item.sender_id) === Number(user?.id);
               return (
                 <div key={item.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
@@ -214,9 +139,6 @@ const OrderChatDialog = ({ open, onOpenChange, orderId, productName, fallbackPar
               );
             })}
 
-            {partnerTyping && (
-              <p className="text-xs text-muted-foreground italic">{partnerName} is typing...</p>
-            )}
           </div>
 
           <div className="border-t border-border p-3 bg-card/90">
@@ -226,19 +148,26 @@ const OrderChatDialog = ({ open, onOpenChange, orderId, productName, fallbackPar
             <div className="flex items-end gap-2">
               <Textarea
                 value={messageInput}
-                onChange={(event) => handleTyping(event.target.value)}
+                onChange={(event) => setMessageInput(event.target.value)}
                 placeholder="Type your message..."
                 className="min-h-[44px] max-h-32"
                 maxLength={300}
-                disabled={!canSend}
+                disabled={!canSend || sendMutation.isPending}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" && !event.shiftKey) {
                     event.preventDefault();
-                    sendMessage();
+                    void sendMessage();
                   }
                 }}
               />
-              <Button type="button" className="h-11 bg-accent hover:bg-accent/90" onClick={sendMessage} disabled={!canSend || !messageInput.trim()}>
+              <Button
+                type="button"
+                className="h-11 bg-accent hover:bg-accent/90"
+                onClick={() => {
+                  void sendMessage();
+                }}
+                disabled={!canSend || !messageInput.trim() || sendMutation.isPending}
+              >
                 <Send className="h-4 w-4" />
               </Button>
             </div>
