@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -24,12 +25,12 @@ import FarmerMyProducts from "@/pages/farmer/MyProducts";
 import FarmerProfile from "@/pages/farmer/Profile";
 import FarmerOrders from "@/pages/farmer/Orders";
 import FarmerDiagnosis from "@/pages/farmer/Diagnosis";
+import FarmerArticles from "@/pages/farmer/Articles";
 import ProductDetail from "./pages/ProductDetail.tsx";
 import CustomerHome from "@/pages/customer/Home";
 import CustomerMarket from "@/pages/customer/Market";
 import CustomerProductDetail from "@/pages/customer/ProductDetail";
 import CustomerWishlist from "@/pages/customer/Wishlist";
-import CustomerArticles from "@/pages/customer/Articles";
 import CustomerProfile from "@/pages/customer/Profile";
 import CustomerCart from "@/pages/customer/Cart";
 import CustomerOrders from "@/pages/customer/Orders";
@@ -50,61 +51,91 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <Routes>
-              <Route element={<PublicRoute />}>
-                <Route path={ROUTES.root} element={<Index />} />
-                <Route path={ROUTES.getStarted} element={<GetStarted />} />
+const App = () => {
+  useEffect(() => {
+    const pingBackend = () => {
+      if (!navigator.onLine) return;
 
-                <Route element={<AuthLayout />}>
-                  <Route path={ROUTES.auth.farmerLogin} element={<FarmerLogin />} />
-                  <Route path={ROUTES.auth.farmerSignup} element={<FarmerSignup />} />
-                  <Route path={ROUTES.auth.customerLogin} element={<CustomerLogin />} />
-                  <Route path={ROUTES.auth.customerSignup} element={<CustomerSignup />} />
+      const apiBase = (import.meta.env.VITE_API_BASE_URL ?? "/api/v1").replace(/\/+$/, "");
+
+      void fetch(`${apiBase}/health`, {
+        method: "GET",
+        credentials: "include",
+      }).catch(() => {
+        // Warm-up is best-effort only.
+      });
+    };
+
+    const earlyTimeoutId = window.setTimeout(() => {
+      pingBackend();
+    }, 350);
+
+    const delayedTimeoutId = window.setTimeout(() => {
+      pingBackend();
+    }, 9000);
+
+    return () => {
+      window.clearTimeout(earlyTimeoutId);
+      window.clearTimeout(delayedTimeoutId);
+    };
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AuthProvider>
+              <Routes>
+                <Route element={<PublicRoute />}>
+                  <Route path={ROUTES.root} element={<Index />} />
+                  <Route path={ROUTES.getStarted} element={<GetStarted />} />
+
+                  <Route element={<AuthLayout />}>
+                    <Route path={ROUTES.auth.farmerLogin} element={<FarmerLogin />} />
+                    <Route path={ROUTES.auth.farmerSignup} element={<FarmerSignup />} />
+                    <Route path={ROUTES.auth.customerLogin} element={<CustomerLogin />} />
+                    <Route path={ROUTES.auth.customerSignup} element={<CustomerSignup />} />
+                  </Route>
                 </Route>
-              </Route>
 
-              <Route element={<ProtectedRoute role="farmer" />}>
-                <Route element={<FarmerLayout />}>
-                  <Route path={ROUTES.farmer.home} element={<FarmerDashboard />} />
-                  <Route path={ROUTES.farmer.sell} element={<FarmerSell />} />
-                  <Route path={ROUTES.farmer.market} element={<FarmerMarket />} />
-                  <Route path={`${ROUTES.farmer.market}/:productId`} element={<ProductDetail />} />
-                  <Route path={ROUTES.farmer.myProducts} element={<FarmerMyProducts />} />
-                  <Route path={ROUTES.farmer.orders} element={<FarmerOrders />} />
-                  <Route path={ROUTES.farmer.diagnosis} element={<FarmerDiagnosis />} />
-                  <Route path={ROUTES.farmer.profile} element={<FarmerProfile />} />
+                <Route element={<ProtectedRoute role="farmer" />}>
+                  <Route element={<FarmerLayout />}>
+                    <Route path={ROUTES.farmer.home} element={<FarmerDashboard />} />
+                    <Route path={ROUTES.farmer.sell} element={<FarmerSell />} />
+                    <Route path={ROUTES.farmer.market} element={<FarmerMarket />} />
+                    <Route path={`${ROUTES.farmer.market}/:productId`} element={<ProductDetail />} />
+                    <Route path={ROUTES.farmer.myProducts} element={<FarmerMyProducts />} />
+                    <Route path={ROUTES.farmer.orders} element={<FarmerOrders />} />
+                    <Route path={ROUTES.farmer.diagnosis} element={<FarmerDiagnosis />} />
+                    <Route path={ROUTES.farmer.articles} element={<FarmerArticles />} />
+                    <Route path={ROUTES.farmer.profile} element={<FarmerProfile />} />
+                  </Route>
                 </Route>
-              </Route>
 
-              <Route element={<ProtectedRoute role="customer" />}>
-                <Route element={<CustomerLayout />}>
-                  <Route path={ROUTES.customer.home} element={<CustomerHome />} />
-                  <Route path="/doctor/home" element={<Navigate to={ROUTES.customer.home} replace />} />
-                  <Route path={ROUTES.customer.market} element={<CustomerMarket />} />
-                  <Route path={ROUTES.customer.productDetail} element={<CustomerProductDetail />} />
-                  <Route path={ROUTES.customer.wishlist} element={<CustomerWishlist />} />
-                  <Route path={ROUTES.customer.articles} element={<CustomerArticles />} />
-                  <Route path={ROUTES.customer.profile} element={<CustomerProfile />} />
-                  <Route path={ROUTES.customer.cart} element={<CustomerCart />} />
-                  <Route path={ROUTES.customer.orders} element={<CustomerOrders />} />
+                <Route element={<ProtectedRoute role="customer" />}>
+                  <Route element={<CustomerLayout />}>
+                    <Route path={ROUTES.customer.home} element={<CustomerHome />} />
+                    <Route path="/doctor/home" element={<Navigate to={ROUTES.customer.home} replace />} />
+                    <Route path={ROUTES.customer.market} element={<CustomerMarket />} />
+                    <Route path={ROUTES.customer.productDetail} element={<CustomerProductDetail />} />
+                    <Route path={ROUTES.customer.wishlist} element={<CustomerWishlist />} />
+                    <Route path={ROUTES.customer.profile} element={<CustomerProfile />} />
+                    <Route path={ROUTES.customer.cart} element={<CustomerCart />} />
+                    <Route path={ROUTES.customer.orders} element={<CustomerOrders />} />
+                  </Route>
                 </Route>
-              </Route>
 
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AuthProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

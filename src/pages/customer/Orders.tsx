@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { PackageCheck, Clock3, Truck, CircleCheckBig, Ban } from "lucide-react";
+import { PackageCheck, Clock3, Truck, CircleCheckBig, Ban, MessageCircle } from "lucide-react";
 import Footer from "@/components/landing/Footer";
 import { orderService } from "@/services/order.service";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import OrderChatDialog from "@/components/chat/OrderChatDialog";
 import { toast } from "sonner";
 
 const statusMap: Record<string, { label: string; className: string }> = {
@@ -17,6 +18,12 @@ const statusMap: Record<string, { label: string; className: string }> = {
 
 const Orders = () => {
   const queryClient = useQueryClient();
+  const [activeChatOrder, setActiveChatOrder] = useState<{
+    id: number;
+    productName?: string;
+    partnerName?: string;
+  } | null>(null);
+
   const { data, isLoading } = useQuery({
     queryKey: ["customer-orders"],
     queryFn: () => orderService.list({ page: 1, limit: 100 }),
@@ -122,19 +129,30 @@ const Orders = () => {
                     </div>
                     <div className="flex items-center justify-between gap-3">
                       <Badge variant="outline" className={status.className}>{status.label}</Badge>
-                      {canCancel ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                          onClick={() => cancelMutation.mutate(order.id)}
-                          disabled={cancelMutation.isPending}
-                        >
-                          Cancel
-                        </Button>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">-</span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {order.status !== "cancelled" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setActiveChatOrder({ id: Number(order.id), productName: order.product_name, partnerName: order.username })}
+                          >
+                            <MessageCircle className="h-3.5 w-3.5 mr-1" /> Chat
+                          </Button>
+                        )}
+                        {canCancel ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                            onClick={() => cancelMutation.mutate(order.id)}
+                            disabled={cancelMutation.isPending}
+                          >
+                            Cancel
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -145,7 +163,16 @@ const Orders = () => {
                     <span className="col-span-2">
                       <Badge variant="outline" className={status.className}>{status.label}</Badge>
                     </span>
-                    <span className="col-span-2 text-right">
+                    <span className="col-span-2 text-right space-x-2">
+                      {order.status !== "cancelled" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setActiveChatOrder({ id: Number(order.id), productName: order.product_name, partnerName: order.username })}
+                        >
+                          <MessageCircle className="h-3.5 w-3.5 mr-1" /> Chat
+                        </Button>
+                      )}
                       {canCancel ? (
                         <Button
                           variant="outline"
@@ -165,6 +192,16 @@ const Orders = () => {
               );
             })}
           </div>
+
+          <OrderChatDialog
+            open={Boolean(activeChatOrder)}
+            onOpenChange={(nextOpen) => {
+              if (!nextOpen) setActiveChatOrder(null);
+            }}
+            orderId={activeChatOrder?.id ?? null}
+            productName={activeChatOrder?.productName}
+            fallbackPartnerName={activeChatOrder?.partnerName}
+          />
         </div>
       </main>
       <Footer />

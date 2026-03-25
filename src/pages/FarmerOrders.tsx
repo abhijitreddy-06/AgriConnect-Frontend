@@ -1,10 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { PackageCheck, Clock3, Truck, CircleCheckBig, Ban } from "lucide-react";
+import { PackageCheck, Clock3, Truck, CircleCheckBig, Ban, MessageCircle } from "lucide-react";
 import Footer from "@/components/landing/Footer";
 import { orderService } from "@/services/order.service";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import OrderChatDialog from "@/components/chat/OrderChatDialog";
 
 const statusMap: Record<string, { label: string; className: string }> = {
   pending: { label: "Pending", className: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
@@ -15,6 +17,12 @@ const statusMap: Record<string, { label: string; className: string }> = {
 };
 
 const FarmerOrders = () => {
+  const [activeChatOrder, setActiveChatOrder] = useState<{
+    id: number;
+    productName?: string;
+    partnerName?: string;
+  } | null>(null);
+
   const { data, isLoading } = useQuery({
     queryKey: ["farmer-orders"],
     queryFn: () => orderService.list({ page: 1, limit: 100 }),
@@ -68,10 +76,11 @@ const FarmerOrders = () => {
 
           <div className="rounded-2xl border border-border bg-card overflow-hidden">
             <div className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-border bg-muted/40 text-xs font-semibold text-muted-foreground">
-              <span className="col-span-4">Product</span>
+              <span className="col-span-3">Product</span>
               <span className="col-span-2">Qty</span>
               <span className="col-span-3">Customer</span>
-              <span className="col-span-3">Status</span>
+              <span className="col-span-2">Status</span>
+              <span className="col-span-2 text-right">Chat</span>
             </div>
 
             {isLoading && <p className="px-4 py-8 text-sm text-muted-foreground">Loading orders...</p>}
@@ -90,17 +99,40 @@ const FarmerOrders = () => {
               };
 
               return (
-                <div key={order.id} className="grid grid-cols-12 gap-2 px-4 py-3 border-b last:border-b-0 border-border text-sm">
-                  <span className="col-span-4 font-medium text-foreground truncate">{order.product_name || "Product"}</span>
+                <div key={order.id} className="grid grid-cols-12 gap-2 px-4 py-3 border-b last:border-b-0 border-border text-sm items-center">
+                  <span className="col-span-3 font-medium text-foreground truncate">{order.product_name || "Product"}</span>
                   <span className="col-span-2 text-muted-foreground">{order.quantity}</span>
                   <span className="col-span-3 text-muted-foreground truncate">{order.username || "Customer"}</span>
-                  <span className="col-span-3">
+                  <span className="col-span-2">
                     <Badge variant="outline" className={status.className}>{status.label}</Badge>
+                  </span>
+                  <span className="col-span-2 text-right">
+                    {order.status !== "cancelled" ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setActiveChatOrder({ id: Number(order.id), productName: order.product_name, partnerName: order.username })}
+                      >
+                        <MessageCircle className="h-3.5 w-3.5 mr-1" /> Chat
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">-</span>
+                    )}
                   </span>
                 </div>
               );
             })}
           </div>
+
+          <OrderChatDialog
+            open={Boolean(activeChatOrder)}
+            onOpenChange={(nextOpen) => {
+              if (!nextOpen) setActiveChatOrder(null);
+            }}
+            orderId={activeChatOrder?.id ?? null}
+            productName={activeChatOrder?.productName}
+            fallbackPartnerName={activeChatOrder?.partnerName}
+          />
         </div>
       </main>
       <Footer />

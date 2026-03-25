@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 const navLinks = [
   { label: "Dashboard", path: ROUTES.farmer.home },
   { label: "Plant Diagnosis", path: ROUTES.farmer.diagnosis },
+  { label: "Guides", path: ROUTES.farmer.articles },
   { label: "Marketplace", path: ROUTES.farmer.market },
   { label: "Add Product", path: ROUTES.farmer.sell },
   { label: "My Listings", path: ROUTES.farmer.myProducts },

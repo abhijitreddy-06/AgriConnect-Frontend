@@ -8,7 +8,6 @@ import heroDashboard from "@/assets/hero-dashboard.png";
 import { useAuth } from "@/context/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { weatherService } from "@/services/weather.service";
-import { articleService } from "@/services/article.service";
 
 const getGreeting = () => {
   const h = new Date().getHours();
@@ -48,13 +47,6 @@ const CustomerHome = () => {
     queryKey: ["regional-weather-home"],
     queryFn: () => weatherService.getRegionalWeather({ region: "hyderabad" }),
   });
-
-  const { data: featuredArticles = [] } = useQuery({
-    queryKey: ["home-extension-articles"],
-    queryFn: () => articleService.list(),
-  });
-
-  const topArticles = featuredArticles.slice(0, 3);
 
   return (
   <div className="min-h-screen bg-background flex flex-col">
@@ -138,7 +130,7 @@ const CustomerHome = () => {
 
     <section className="pb-14">
       <div className="container">
-        <div className="grid lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <div className="customer-premium-card p-5">
             <div className="flex items-center gap-2 mb-3">
               <CloudSun className="h-5 w-5 text-accent" />
@@ -164,24 +156,6 @@ const CustomerHome = () => {
                 <p key={alert} className="text-xs text-muted-foreground rounded-md border border-amber-500/20 bg-amber-500/10 p-2">
                   {alert}
                 </p>
-              ))}
-            </div>
-          </div>
-
-          <div className="customer-premium-card p-5">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-display font-semibold text-foreground">Extension Articles</h3>
-              <Button asChild size="sm" variant="outline" className="border-accent/40 text-accent hover:bg-accent/10">
-                <Link to={ROUTES.customer.articles}>View All</Link>
-              </Button>
-            </div>
-
-            <div className="space-y-2">
-              {topArticles.map((article) => (
-                <div key={article.id} className="rounded-lg border border-accent/20 p-3">
-                  <p className="text-sm font-semibold text-foreground">{article.title}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{article.summary}</p>
-                </div>
               ))}
             </div>
           </div>

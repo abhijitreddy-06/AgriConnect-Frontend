@@ -10,7 +10,6 @@ const navLinks = [
   { label: "Home", path: ROUTES.customer.home },
   { label: "Marketplace", path: ROUTES.customer.market },
   { label: "Wishlist", path: ROUTES.customer.wishlist },
-  { label: "Guides", path: ROUTES.customer.articles },
   { label: "Cart", path: ROUTES.customer.cart },
   { label: "Orders", path: ROUTES.customer.orders },
   { label: "Profile", path: ROUTES.customer.profile },
