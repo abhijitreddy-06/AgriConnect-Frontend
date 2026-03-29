@@ -1,3 +1,3 @@
-# Welcome to your Lovable project
+# AgriConnect Frontend
 
-TODO: Document your project here
+React + Vite frontend for AgriConnect marketplace.

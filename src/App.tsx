@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -34,6 +35,7 @@ import CustomerWishlist from "@/pages/customer/Wishlist";
 import CustomerProfile from "@/pages/customer/Profile";
 import CustomerCart from "@/pages/customer/Cart";
 import CustomerOrders from "@/pages/customer/Orders";
+import SeoManager from "@/components/seo/SeoManager";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient({
@@ -86,9 +88,11 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
-            <AuthProvider>
-              <Routes>
+          <HelmetProvider>
+            <BrowserRouter>
+              <AuthProvider>
+                <SeoManager />
+                <Routes>
                 <Route element={<PublicRoute />}>
                   <Route path={ROUTES.root} element={<Index />} />
                   <Route path={ROUTES.getStarted} element={<GetStarted />} />
@@ -129,9 +133,10 @@ const App = () => {
                 </Route>
 
                 <Route path="*" element={<NotFound />} />
-              </Routes>
-            </AuthProvider>
-          </BrowserRouter>
+                </Routes>
+              </AuthProvider>
+            </BrowserRouter>
+          </HelmetProvider>
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
