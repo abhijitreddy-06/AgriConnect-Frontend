@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
@@ -31,6 +31,12 @@ const FarmerProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [fullName, setFullName] = useState(user?.username || "");
   const [deliveryAddress, setDeliveryAddress] = useState(user?.deliveryAddress || "");
+  const editFormRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isEditing) return;
+    editFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [isEditing]);
 
   const { data: productData } = useQuery({
     queryKey: ["farmer-profile-products", user?.id],
@@ -131,7 +137,13 @@ const FarmerProfile = () => {
               <p className="text-xs text-muted-foreground mt-2">Address: {user?.deliveryAddress || "Not set"}</p>
 
               <div className="w-full mt-6 space-y-2">
-                <Button variant="outline" className="w-full justify-start gap-2" onClick={() => setIsEditing(true)}>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={() => {
+                    setIsEditing(true);
+                  }}
+                >
                   <Pencil className="h-4 w-4" /> Edit Profile
                 </Button>
                 <Button
@@ -184,7 +196,7 @@ const FarmerProfile = () => {
                 </div>
 
                 {isEditing && (
-                  <div className="mt-5 rounded-xl border border-border bg-muted/30 p-4 space-y-4">
+                  <div ref={editFormRef} className="mt-5 rounded-xl border border-border bg-muted/30 p-4 space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="fullName">Full Name</Label>
                       <Input

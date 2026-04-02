@@ -1,12 +1,13 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { ROUTES } from "@/config/routes";
 import { useAuth } from "@/context/AuthContext";
+import RouteLoadingScreen from "@/components/routing/RouteLoadingScreen";
 
 const PublicRoute = () => {
   const { isAuthenticated, isLoading, role } = useAuth();
 
   if (isLoading) {
-    return <div className="min-h-screen bg-background" />;
+    return <RouteLoadingScreen />;
   }
 
   if (isAuthenticated) {

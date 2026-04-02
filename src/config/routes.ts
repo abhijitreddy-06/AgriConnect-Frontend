@@ -3,6 +3,7 @@ export const ROUTES = {
   getStarted: "/get-started",
   farmer: {
     home: "/farmer/home",
+    chats: "/farmer/chats",
     diagnosis: "/farmer/diagnosis",
     sell: "/farmer/sell",
     market: "/farmer/market",

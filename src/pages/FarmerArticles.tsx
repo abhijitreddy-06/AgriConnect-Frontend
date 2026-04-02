@@ -11,6 +11,7 @@ const categories = ["All", "Best Practices", "Market Tips", "Farming Guides", "P
 const FarmerArticles = () => {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [expandedArticleIds, setExpandedArticleIds] = useState<Record<number, boolean>>({});
 
   const { data: articles = [], isLoading } = useQuery({
     queryKey: ["farmer-extension-articles", activeCategory, search],
@@ -21,6 +22,13 @@ const FarmerArticles = () => {
   });
 
   const filtered = useMemo(() => articles, [articles]);
+
+  const toggleExpanded = (articleId: number) => {
+    setExpandedArticleIds((previous) => ({
+      ...previous,
+      [articleId]: !previous[articleId],
+    }));
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -76,14 +84,27 @@ const FarmerArticles = () => {
               <p className="text-muted-foreground">No guides found for this filter.</p>
             )}
 
-            {filtered.map((article) => (
+            {filtered.map((article) => {
+              const isExpanded = Boolean(expandedArticleIds[article.id]);
+              return (
               <article key={article.id} className="rounded-2xl border border-primary/20 bg-card p-5 space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="font-semibold text-foreground">{article.title}</h3>
                   <Badge variant="secondary">{article.category}</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">{article.summary}</p>
-                <p className="text-sm text-foreground/90 leading-relaxed">{article.content}</p>
+                <p className={`text-sm text-foreground/90 leading-relaxed whitespace-pre-line ${isExpanded ? "" : "line-clamp-4"}`}>
+                  {article.content}
+                </p>
+                {article.content && article.content.length > 260 && (
+                  <button
+                    type="button"
+                    onClick={() => toggleExpanded(article.id)}
+                    className="text-xs font-semibold text-primary hover:underline"
+                  >
+                    {isExpanded ? "Show less" : "Read more"}
+                  </button>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {article.tags.map((tag) => (
                     <span key={tag} className="inline-flex items-center gap-1 text-xs rounded-full border px-2 py-1 text-muted-foreground">
@@ -93,7 +114,8 @@ const FarmerArticles = () => {
                   ))}
                 </div>
               </article>
-            ))}
+              );
+            })}
           </section>
         </div>
       </main>

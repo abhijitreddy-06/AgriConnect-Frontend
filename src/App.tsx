@@ -25,6 +25,7 @@ import FarmerMarket from "@/pages/farmer/Market";
 import FarmerMyProducts from "@/pages/farmer/MyProducts";
 import FarmerProfile from "@/pages/farmer/Profile";
 import FarmerOrders from "@/pages/farmer/Orders";
+import FarmerChats from "@/pages/farmer/Chats";
 import FarmerDiagnosis from "@/pages/farmer/Diagnosis";
 import FarmerArticles from "@/pages/farmer/Articles";
 import ProductDetail from "./pages/ProductDetail.tsx";
@@ -59,13 +60,24 @@ const App = () => {
       if (!navigator.onLine) return;
 
       const apiBase = (import.meta.env.VITE_API_BASE_URL ?? "/api/v1").replace(/\/+$/, "");
+      const warmupPaths = ["/health", "/auth/verify"];
 
-      void fetch(`${apiBase}/health`, {
-        method: "GET",
-        credentials: "include",
-      }).catch(() => {
-        // Warm-up is best-effort only.
+      warmupPaths.forEach((path) => {
+        void fetch(`${apiBase}${path}`, {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+          keepalive: true,
+        }).catch(() => {
+          // Warm-up is best-effort only.
+        });
       });
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        pingBackend();
+      }
     };
 
     const earlyTimeoutId = window.setTimeout(() => {
@@ -76,9 +88,14 @@ const App = () => {
       pingBackend();
     }, 9000);
 
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("online", pingBackend);
+
     return () => {
       window.clearTimeout(earlyTimeoutId);
       window.clearTimeout(delayedTimeoutId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("online", pingBackend);
     };
   }, []);
 
@@ -112,6 +129,7 @@ const App = () => {
                     <Route path={ROUTES.farmer.market} element={<FarmerMarket />} />
                     <Route path={`${ROUTES.farmer.market}/:productId`} element={<ProductDetail />} />
                     <Route path={ROUTES.farmer.myProducts} element={<FarmerMyProducts />} />
+                    <Route path={ROUTES.farmer.chats} element={<FarmerChats />} />
                     <Route path={ROUTES.farmer.orders} element={<FarmerOrders />} />
                     <Route path={ROUTES.farmer.diagnosis} element={<FarmerDiagnosis />} />
                     <Route path={ROUTES.farmer.articles} element={<FarmerArticles />} />

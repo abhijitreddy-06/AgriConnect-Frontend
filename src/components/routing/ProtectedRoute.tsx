@@ -3,6 +3,7 @@ import { type ReactNode } from "react";
 import { ROUTES } from "@/config/routes";
 import { useAuth } from "@/context/AuthContext";
 import type { AuthRole } from "@/services/auth.service";
+import RouteLoadingScreen from "@/components/routing/RouteLoadingScreen";
 
 interface ProtectedRouteProps {
   role?: AuthRole;
@@ -24,7 +25,7 @@ const ProtectedRoute = ({ role, children }: ProtectedRouteProps) => {
   const location = useLocation();
 
   if (isLoading) {
-    return <div className="min-h-screen bg-background" />;
+    return <RouteLoadingScreen />;
   }
 
   if (!isAuthenticated) {

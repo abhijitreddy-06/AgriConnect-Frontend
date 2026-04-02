@@ -240,9 +240,9 @@ const FarmerMarket = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => handleDelete(product.id)}
-                        className="w-full text-destructive border-destructive/30 hover:bg-destructive/10 rounded-lg"
+                        className="w-full justify-center px-3 text-destructive border-destructive/30 hover:bg-destructive/10 rounded-lg"
                       >
-                        <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Remove Listing
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                       </Button>
                     </div>
                   )}

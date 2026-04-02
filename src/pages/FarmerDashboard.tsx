@@ -2,7 +2,6 @@ import Features from "@/components/landing/Features";
 import HowItWorks from "@/components/landing/HowItWorks";
 import AIHighlight from "@/components/landing/AIHighlight";
 import Testimonials from "@/components/landing/Testimonials";
-import CTASection from "@/components/landing/CTASection";
 import Footer from "@/components/landing/Footer";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -81,7 +80,6 @@ const FarmerDashboard = () => (
     <HowItWorks />
     <AIHighlight />
     <Testimonials />
-    <CTASection />
     <Footer />
   </div>
 );

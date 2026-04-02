@@ -84,6 +84,12 @@ const routeSeoConfig: RouteSeoConfig[] = [
     indexable: false,
   },
   {
+    pattern: ROUTES.farmer.chats,
+    title: "Farmer Chats | AgriConnect",
+    description: "Chat with customers per order and respond quickly from your AgriConnect farmer inbox.",
+    indexable: false,
+  },
+  {
     pattern: ROUTES.farmer.orders,
     title: "Farmer Orders Management | AgriConnect",
     description: "Track incoming customer orders, update statuses, and respond faster using AgriConnect farmer order tools.",
@@ -156,6 +162,7 @@ const segmentLabelMap: Record<string, string> = {
   customer: "Customer",
   market: "Market",
   orders: "Orders",
+  chats: "Chats",
   profile: "Profile",
   cart: "Cart",
   wishlist: "Wishlist",

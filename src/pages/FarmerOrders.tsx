@@ -113,8 +113,13 @@ const FarmerOrders = () => {
                       <span className="text-muted-foreground">Customer</span>
                       <span className="text-foreground text-right max-w-[60%] truncate">{order.username || "Customer"}</span>
                     </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-muted-foreground">Status</span>
+                      <Badge variant="outline" className={`${status.className} px-2.5 py-1 rounded-full text-xs font-semibold`}>
+                        {status.label}
+                      </Badge>
+                    </div>
                     <div className="flex flex-col gap-2.5">
-                      <Badge variant="outline" className={status.className}>{status.label}</Badge>
                       <div className="flex flex-wrap items-center justify-end gap-2">
                         {order.status !== "cancelled" ? (
                           <Button

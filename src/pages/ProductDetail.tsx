@@ -172,7 +172,7 @@ const ProductDetail = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3">
-                <Button variant="hero" size="lg" className="flex-1 rounded-xl">
+                <Button variant="hero" size="lg" className="flex-1 rounded-xl h-14 text-base">
                   <ShoppingCart className="h-5 w-5 mr-2" /> Add to Cart
                 </Button>
               </div>
