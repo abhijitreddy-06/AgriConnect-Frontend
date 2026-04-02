@@ -243,6 +243,7 @@ const FarmerMarket = () => {
                         className="w-full justify-center px-3 text-destructive border-destructive/30 hover:bg-destructive/10 rounded-lg"
                       >
                         <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                        Remove Listing
                       </Button>
                     </div>
                   )}

@@ -17,11 +17,6 @@ export default defineConfig(({ mode }) => ({
         target: "http://localhost:8080",
         changeOrigin: true,
       },
-      "/socket.io": {
-        target: "http://localhost:8080",
-        changeOrigin: true,
-        ws: true,
-      },
     },
     hmr: {
       overlay: false,

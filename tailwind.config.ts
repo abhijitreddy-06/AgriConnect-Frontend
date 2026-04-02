@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
 export default {
-  darkMode: ["class"],
+  darkMode: "class",
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   prefix: "",
   theme: {
@@ -31,6 +31,7 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          hover: "hsl(var(--primary-hover))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -60,6 +61,9 @@ export default {
         "green-light": "hsl(var(--green-light))",
         "ai-blue": "hsl(var(--ai-blue))",
         "action-yellow": "hsl(var(--action-yellow))",
+        warning: "hsl(var(--warning))",
+        info: "hsl(var(--info))",
+        placeholder: "hsl(var(--placeholder))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -77,6 +81,11 @@ export default {
         sm: "calc(var(--radius) - 4px)",
         xl: "1rem",
         "2xl": "1.25rem",
+      },
+      boxShadow: {
+        soft: "var(--shadow-soft)",
+        card: "var(--shadow-card)",
+        elevated: "var(--shadow-elevated)",
       },
       keyframes: {
         "accordion-down": {

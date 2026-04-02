@@ -5,18 +5,18 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-transparent text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/80 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98]",
+        default: "bg-primary text-primary-foreground shadow-soft hover:bg-primary-hover hover:shadow-card hover:scale-[1.01] active:scale-[0.99]",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border-2 border-primary text-primary bg-transparent hover:bg-primary/5 hover:scale-[1.02]",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        outline: "border border-border bg-transparent text-foreground hover:bg-accent hover:text-accent-foreground",
+        secondary: "border border-border bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        action: "bg-action-yellow text-green-dark font-bold hover:brightness-105 hover:scale-[1.02] active:scale-[0.98]",
-        hero: "bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/25",
+        action: "bg-action-yellow text-green-dark font-bold hover:brightness-105 hover:scale-[1.01] active:scale-[0.99]",
+        hero: "bg-primary text-primary-foreground shadow-elevated hover:bg-primary-hover hover:scale-[1.01] active:scale-[0.99]",
       },
       size: {
         default: "h-10 px-4 py-2",
