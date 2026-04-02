@@ -31,11 +31,11 @@ const FarmerProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [fullName, setFullName] = useState(user?.username || "");
   const [deliveryAddress, setDeliveryAddress] = useState(user?.deliveryAddress || "");
-  const editFormRef = useRef<HTMLDivElement | null>(null);
+  const fullNameFieldRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!isEditing) return;
-    editFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    fullNameFieldRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [isEditing]);
 
   const { data: productData } = useQuery({
@@ -148,7 +148,7 @@ const FarmerProfile = () => {
                 </Button>
                 <Button
                   variant="ghost"
-                  className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  className="w-full justify-start gap-2 text-destructive dark:text-red-300 font-semibold hover:text-destructive dark:hover:text-red-200 hover:bg-destructive/10"
                   onClick={() => logoutMutation.mutate()}
                   disabled={logoutMutation.isPending}
                 >
@@ -196,8 +196,8 @@ const FarmerProfile = () => {
                 </div>
 
                 {isEditing && (
-                  <div ref={editFormRef} className="mt-5 rounded-xl border border-border bg-muted/30 p-4 space-y-4">
-                    <div className="space-y-2">
+                  <div className="mt-5 rounded-xl border border-border bg-muted/30 p-4 space-y-4">
+                    <div ref={fullNameFieldRef} className="space-y-2 scroll-mt-28">
                       <Label htmlFor="fullName">Full Name</Label>
                       <Input
                         id="fullName"

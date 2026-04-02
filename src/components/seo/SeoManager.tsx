@@ -90,6 +90,12 @@ const routeSeoConfig: RouteSeoConfig[] = [
     indexable: false,
   },
   {
+    pattern: ROUTES.farmer.chatThread,
+    title: "Farmer Chat Thread | AgriConnect",
+    description: "Continue chat with your customer in a dedicated AgriConnect conversation thread.",
+    indexable: false,
+  },
+  {
     pattern: ROUTES.farmer.orders,
     title: "Farmer Orders Management | AgriConnect",
     description: "Track incoming customer orders, update statuses, and respond faster using AgriConnect farmer order tools.",

@@ -4,6 +4,7 @@ export const ROUTES = {
   farmer: {
     home: "/farmer/home",
     chats: "/farmer/chats",
+    chatThread: "/farmer/chats/:orderId",
     diagnosis: "/farmer/diagnosis",
     sell: "/farmer/sell",
     market: "/farmer/market",

@@ -1,12 +1,13 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { PackageCheck, Clock3, Truck, CircleCheckBig, Ban, MessageCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import Footer from "@/components/landing/Footer";
 import { orderService } from "@/services/order.service";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import OrderChatDialog from "@/components/chat/OrderChatDialog";
+import { ROUTES } from "@/config/routes";
 
 const statusMap: Record<string, { label: string; className: string }> = {
   pending: { label: "Pending", className: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
@@ -17,11 +18,7 @@ const statusMap: Record<string, { label: string; className: string }> = {
 };
 
 const FarmerOrders = () => {
-  const [activeChatOrder, setActiveChatOrder] = useState<{
-    id: number;
-    productName?: string;
-    partnerName?: string;
-  } | null>(null);
+  const navigate = useNavigate();
 
   const { data, isLoading } = useQuery({
     queryKey: ["farmer-orders"],
@@ -43,8 +40,8 @@ const FarmerOrders = () => {
   }, [orders]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="pt-24 pb-16">
+    <div className="min-h-screen bg-background flex flex-col">
+      <main className="pt-24 pb-16 flex-1">
         <div className="container max-w-6xl">
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
             <h1 className="font-display font-bold text-3xl md:text-4xl text-foreground">Order Requests</h1>
@@ -126,7 +123,7 @@ const FarmerOrders = () => {
                             variant="outline"
                             size="sm"
                             className="whitespace-nowrap"
-                            onClick={() => setActiveChatOrder({ id: Number(order.id), productName: order.product_name, partnerName: order.username })}
+                            onClick={() => navigate(`${ROUTES.farmer.chats}/${order.id}`)}
                           >
                             <MessageCircle className="h-3.5 w-3.5 mr-1" /> Chat
                           </Button>
@@ -149,7 +146,7 @@ const FarmerOrders = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setActiveChatOrder({ id: Number(order.id), productName: order.product_name, partnerName: order.username })}
+                          onClick={() => navigate(`${ROUTES.farmer.chats}/${order.id}`)}
                         >
                           <MessageCircle className="h-3.5 w-3.5 mr-1" /> Chat
                         </Button>
@@ -163,15 +160,6 @@ const FarmerOrders = () => {
             })}
           </div>
 
-          <OrderChatDialog
-            open={Boolean(activeChatOrder)}
-            onOpenChange={(nextOpen) => {
-              if (!nextOpen) setActiveChatOrder(null);
-            }}
-            orderId={activeChatOrder?.id ?? null}
-            productName={activeChatOrder?.productName}
-            fallbackPartnerName={activeChatOrder?.partnerName}
-          />
         </div>
       </main>
       <Footer />

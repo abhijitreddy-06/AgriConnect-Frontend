@@ -26,6 +26,7 @@ import FarmerMyProducts from "@/pages/farmer/MyProducts";
 import FarmerProfile from "@/pages/farmer/Profile";
 import FarmerOrders from "@/pages/farmer/Orders";
 import FarmerChats from "@/pages/farmer/Chats";
+import FarmerChatThread from "@/pages/farmer/ChatThread";
 import FarmerDiagnosis from "@/pages/farmer/Diagnosis";
 import FarmerArticles from "@/pages/farmer/Articles";
 import ProductDetail from "./pages/ProductDetail.tsx";
@@ -130,6 +131,7 @@ const App = () => {
                     <Route path={`${ROUTES.farmer.market}/:productId`} element={<ProductDetail />} />
                     <Route path={ROUTES.farmer.myProducts} element={<FarmerMyProducts />} />
                     <Route path={ROUTES.farmer.chats} element={<FarmerChats />} />
+                    <Route path={ROUTES.farmer.chatThread} element={<FarmerChatThread />} />
                     <Route path={ROUTES.farmer.orders} element={<FarmerOrders />} />
                     <Route path={ROUTES.farmer.diagnosis} element={<FarmerDiagnosis />} />
                     <Route path={ROUTES.farmer.articles} element={<FarmerArticles />} />
