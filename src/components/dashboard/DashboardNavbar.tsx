@@ -35,9 +35,7 @@ const DashboardNavbar = () => {
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? "glass-nav shadow-soft border-border/80"
-          : "bg-card/80 backdrop-blur-lg border-b border-border/70"
+        scrolled ? "glass-nav shadow-sm" : "bg-card/80 backdrop-blur-lg border-b border-border"
       }`}
     >
       <div className="container flex items-center justify-between h-16 md:h-18">
@@ -55,7 +53,7 @@ const DashboardNavbar = () => {
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isActive(link.path)
                   ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent/80"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
               {link.label}
